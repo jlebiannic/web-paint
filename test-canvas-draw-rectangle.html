@@ -92,46 +92,30 @@
         scaleCanvas(scale);
       }
 
+      var rotateAngle = 0;
       function onRotatePlus() {
-        rotateCanvas(Math.PI);
+        rotateAngle = (rotateAngle + 90) % 360;
+        rotateCanvas(rotateAngle);
       }
-
       function onRotateMoins() {
-        rotateCanvas(-Math.PI);
+        rotateAngle = (rotateAngle - 90) % 360;
+        rotateCanvas(rotateAngle);
       }
-
-      function rotateCanvas(rad) {
+      function rotateCanvas(rotateAngle) {
         ctx.clearRect(0, 0, WIDTH, HEIGHT);
-        //canvas.x = canvas.x + WIDTH / 2;
-        //canvas.y = ;
-        //canvas.width = HEIGHT;
-        canvas.height = WIDTH; //imageSizeAfterRotation([1000, 500], 90)[1];
-        console.log("canvas.height=", canvas.height);
+        ctx.save();
+        ctx.rotate((rotateAngle * Math.PI) / 180);
 
-        ctx.translate(WIDTH / 2, HEIGHT / 2);
-        ctx.rotate(rad / 2);
-        ctx.translate(-WIDTH / 2, -HEIGHT / 2);
-        //ctx.translate(WIDTH / 2, 0);
+        if (rotateAngle === 90 || rotateAngle === -270) {
+          ctx.translate(0, -HEIGHT);
+        } else if (rotateAngle === 180 || rotateAngle === -180) {
+          ctx.translate(-WIDTH, -HEIGHT);
+        } else if (rotateAngle === 270 || rotateAngle === -90) {
+          ctx.translate(-WIDTH, 0);
+        }
+
         ctx.drawImage(img, 0, 0);
-      }
-
-      function imageSizeAfterRotation(size, degrees) {
-        degrees = degrees % 180;
-        if (degrees < 0) {
-          degrees = 180 + degrees;
-        }
-        if (degrees >= 90) {
-          size = [size[1], size[0]];
-          degrees = degrees - 90;
-        }
-        if (degrees === 0) {
-          return size;
-        }
-        const radians = (degrees * Math.PI) / 180;
-        const width = size[0] * Math.cos(radians) + size[1] * Math.sin(radians);
-        const height =
-          size[0] * Math.sin(radians) + size[1] * Math.cos(radians);
-        return [width, height];
+        ctx.restore();
       }
 
       function scaleCanvas(scale) {
