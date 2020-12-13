@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Rectangle</title>
+
+    <style>
+      .color-cell {
+        color: white;
+      }
+    </style>
+  </head>
+  <body>
+    <div style="max-width: 1010px; max-height: 510px; overflow: auto">
+      <canvas
+        id="canvas"
+        width="1000"
+        height="500"
+        style="border-style: solid"
+      ></canvas>
+    </div>
+
+    <canvas
+      id="canvasCopy"
+      width="10"
+      height="10"
+      style="border-style: solid"
+    ></canvas>
+
+    <button onclick="onSave()">Save</button>
+    <button onclick="onZoomPlus()">Zoom+</button>
+    <button onclick="onZoomMoins()">Zoom-</button>
+    <button onclick="onRotatePlus()">Rotate+</button>
+    <button onclick="onRotateMoins()">Rotate-</button>
+    <script>
+      var WIDTH = 1000;
+      var HEIGHT = 500;
+      // var CANVAS_X = 0;
+      // var CANVAS_Y = 0;
+      var DEFAULT_CURSOR = "crosshair";
+
+      var canvas = null;
+      var ctx = null;
+
+      var canvasCopy = null;
+      var ctxCopy = null;
+
+      let startX;
+      let startY;
+
+      let currentRect = null;
+      var oldRect = null;
+
+      mouseIsDown = false;
+
+      var imageDataCopy = null;
+
+      var ETAT_INIT = 0;
+      var ETAT_IMAGE_CHANGED = 1;
+      var etat = ETAT_INIT;
+
+      // window.onload = init;
+
+      var img = new Image(); // Crée un nouvel élément img
+      var onLoadFct = function () {
+        console.log("load img");
+        //
+        //exécute les instructions drawImage ici
+        init(img);
+        img.removeEventListener("load", onLoadFct);
+      };
+      img.addEventListener("load", onLoadFct, false);
+      img.crossOrigin = "anonymous";
+      img.src =
+        "https://i.picsum.photos/id/348/1000/500.jpg?hmac=2PCaEp8HCbHNFZgFJq7PSE2Und9FvmaLMCfNNcramyE";
+
+      function onSave() {
+        var dataURL = canvas
+          .toDataURL("image/png")
+          .replace("image/png", "image/octet-stream");
+
+        window.location.href = dataURL;
+      }
+      var scale = 1;
+      function onZoomPlus() {
+        scale = scale + 0.5;
+        scaleCanvas(scale);
+      }
+
+      function onZoomMoins() {
+        scale = scale - 0.5;
+        scaleCanvas(scale);
+      }
+
+      function onRotatePlus() {
+        rotateCanvas(Math.PI);
+      }
+
+      function onRotateMoins() {
+        rotateCanvas(-Math.PI);
+      }
+
+      function rotateCanvas(rad) {
+        ctx.clearRect(0, 0, WIDTH, HEIGHT);
+        //canvas.x = canvas.x + WIDTH / 2;
+        //canvas.y = ;
+        //canvas.width = HEIGHT;
+        canvas.height = WIDTH; //imageSizeAfterRotation([1000, 500], 90)[1];
+        console.log("canvas.height=", canvas.height);
+
+        ctx.translate(WIDTH / 2, HEIGHT / 2);
+        ctx.rotate(rad / 2);
+        ctx.translate(-WIDTH / 2, -HEIGHT / 2);
+        //ctx.translate(WIDTH / 2, 0);
+        ctx.drawImage(img, 0, 0);
+      }
+
+      function imageSizeAfterRotation(size, degrees) {
+        degrees = degrees % 180;
+        if (degrees < 0) {
+          degrees = 180 + degrees;
+        }
+        if (degrees >= 90) {
+          size = [size[1], size[0]];
+          degrees = degrees - 90;
+        }
+        if (degrees === 0) {
+          return size;
+        }
+        const radians = (degrees * Math.PI) / 180;
+        const width = size[0] * Math.cos(radians) + size[1] * Math.sin(radians);
+        const height =
+          size[0] * Math.sin(radians) + size[1] * Math.cos(radians);
+        return [width, height];
+      }
+
+      function scaleCanvas(scale) {
+        canvas.width = scale * WIDTH;
+        canvas.height = scale * HEIGHT;
+        ctx.scale(scale, scale);
+
+        ctx.clearRect(0, 0, WIDTH, HEIGHT);
+        ctx.drawImage(img, 0, 0);
+      }
+
+      function init(image) {
+        //canvas = document.getElementById("canvas");
+        // CANVAS_X = canvas.getBoundingClientRect().x;
+        // CANVAS_Y = canvas.getBoundingClientRect().y;
+        canvas.style.cursor = DEFAULT_CURSOR;
+        ctx = canvas.getContext("2d");
+        ctx.drawImage(image, 0, 0);
+
+        initstartXAndstartY();
+        ctx.strokeStyle = "black";
+      }
+
+      function onMouseDown(event) {
+        startX = event.offsetX;
+        startY = event.offsetY;
+        mouseIsDown = true;
+        if (!isPointIsInRectangle(startX, startY, currentRect)) {
+          clearCanvas();
+        }
+        //alert("xy=" + event.layerX + ", " + event.layerY)
+        //console.log("[onMouseDown]xy=" + event.layerX + ", " + event.layerY);
+
+        if (isPointIsInRectangle(startX, startY, currentRect)) {
+          canvas.style.cursor = "grabbing";
+        } else {
+          canvas.style.cursor = DEFAULT_CURSOR;
+        }
+      }
+
+      function onMouseMove(event) {
+        var x = event.offsetX;
+        var y = event.offsetY;
+        if (
+          etat !== ETAT_IMAGE_CHANGED &&
+          isTherestartXAndstartY() &&
+          !isPointIsInRectangle(x, y, currentRect)
+        ) {
+          //console.log("xy=" + x + ", " + y);
+          drawRectangleSelectionWithOverlay(x, y);
+        }
+        if (
+          etat === ETAT_IMAGE_CHANGED ||
+          isPointIsInRectangle(x, y, currentRect)
+        ) {
+          if (mouseIsDown) {
+            canvas.style.cursor = "grabbing";
+
+            if (etat === ETAT_INIT) {
+              oldRect = { ...currentRect };
+            }
+
+            moveRectangleSelectionWithOverlay(
+              currentRect.x + (x - startX),
+              currentRect.y + (y - startY),
+              currentRect.w,
+              currentRect.h
+            );
+
+            ctx.putImageData(imageDataCopy, currentRect.x, currentRect.y);
+            etat = ETAT_IMAGE_CHANGED;
+
+            startX = x;
+            startY = y;
+          } else {
+            canvas.style.cursor = "grab";
+          }
+        } else {
+          canvas.style.cursor = DEFAULT_CURSOR;
+        }
+      }
+
+      function onMouseUp(event) {
+        var x = event.offsetX;
+        var y = event.offsetY;
+        if (!isPointIsInRectangle(x, y, currentRect)) {
+          initstartXAndstartY();
+          if (currentRect) createCopyImageInNewCanvas();
+        } else if ((mouseIsDown = false)) {
+          canvas.style.cursor = "grab";
+        } else {
+          initstartXAndstartY();
+          if (etat === ETAT_IMAGE_CHANGED) {
+            var x = currentRect.x,
+              y = currentRect.y;
+            clearCanvas();
+            if (oldRect) {
+              ctx.fillStyle = "white";
+              ctx.fillRect(oldRect.x, oldRect.y, oldRect.w, oldRect.h);
+            }
+            ctx.putImageData(imageDataCopy, x, y);
+            var onLoadFct2 = function () {
+              img.removeEventListener("load", onLoadFct2);
+              console.log("load img 2");
+              //
+              //exécute les instructions drawImage ici
+              ctx.drawImage(img, 0, 0);
+            };
+            img.addEventListener("load", onLoadFct2, false);
+            img.src = canvas.toDataURL();
+            etat = ETAT_INIT;
+            currentRect = null;
+          }
+        }
+        mouseIsDown = false;
+      }
+
+      function isPointIsInRectangle(x, y, rect) {
+        if (!rect) return false;
+        return (
+          x > rect.x && x < rect.x + rect.w && y > rect.y && y < rect.y + rect.h
+        );
+      }
+
+      function moveRectangleSelectionWithOverlay(x, y, w, h) {
+        clearCanvas();
+
+        currentRect = {
+          x,
+          y,
+          w,
+          h,
+        };
+        drawRectangle(
+          currentRect.x,
+          currentRect.y,
+          currentRect.w,
+          currentRect.h
+        );
+
+        drawOverlay();
+        if (oldRect) {
+          ctx.clearRect(oldRect.x, oldRect.y, oldRect.w, oldRect.h);
+        }
+      }
+
+      function drawRectangleSelectionWithOverlay(x, y) {
+        clearCanvas();
+        currentRect = {
+          x: x > startX ? startX : x,
+          y: y > startY ? startY : y,
+          w: x > startX ? x - startX : startX - x,
+          h: y > startY ? y - startY : startY - y,
+        };
+
+        drawRectangle(
+          currentRect.x,
+          currentRect.y,
+          currentRect.w,
+          currentRect.h
+        );
+
+        drawOverlay();
+      }
+
+      function drawOverlay() {
+        var black = "0,0,0";
+        var alpha = 0.5;
+        drawRectangleWithOpacity(black, alpha, {
+          x: 0,
+          y: 0,
+          w: WIDTH,
+          h: currentRect.y,
+        });
+
+        drawRectangleWithOpacity(black, alpha, {
+          x: 0,
+          y: currentRect.y + currentRect.h,
+          w: WIDTH,
+          h: HEIGHT - currentRect.y,
+        });
+
+        drawRectangleWithOpacity(black, alpha, {
+          x: 0,
+          y: currentRect.y,
+          w: currentRect.x,
+          h: currentRect.h,
+        });
+
+        drawRectangleWithOpacity(black, alpha, {
+          x: currentRect.x + currentRect.w,
+          y: currentRect.y,
+          w: WIDTH - (currentRect.w + currentRect.x),
+          h: currentRect.h,
+        });
+      }
+
+      function drawRectangleWithOpacity(color, alpha, rect) {
+        ctx.fillStyle = `rgba(${color}, ${alpha})`;
+        ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
+      }
+
+      function clearCanvas() {
+        //ctx.clearRect(0, 0, WIDTH, HEIGHT);
+        ctx.drawImage(img, 0, 0);
+        currentRect = null;
+      }
+
+      function drawRectangle(x, y, width, height) {
+        //console.log("x,width=" + x + "->" + width);
+        //console.log("y,height=" + y + "->" + height);
+        ctx.setLineDash([6]);
+        ctx.strokeRect(x, y, width, height);
+        ctx.setLineDash([]);
+      }
+
+      function initstartXAndstartY() {
+        startX = -1;
+        startY = -1;
+      }
+
+      function isTherestartXAndstartY() {
+        return startX != -1 && startY != -1;
+      }
+
+      function createCopyImageInNewCanvas() {
+        var canvasCopy = document.getElementById("canvasCopy");
+        ctxCopy = canvasCopy.getContext("2d");
+        canvasCopy.width = currentRect.w;
+        canvasCopy.height = currentRect.h;
+        //console.log("rect=", currentRect);
+        imageDataCopy = ctx.getImageData(
+          currentRect.x + 1,
+          currentRect.y + 1,
+          currentRect.w - 2,
+          currentRect.h - 2
+        );
+        ctxCopy.putImageData(imageDataCopy, 0, 0);
+      }
+
+      var canvas = document.getElementById("canvas");
+      canvas.addEventListener("mousedown", onMouseDown);
+      canvas.addEventListener("mousemove", onMouseMove);
+      canvas.addEventListener("mouseup", onMouseUp);
+    </script>
+  </body>
+</html>
