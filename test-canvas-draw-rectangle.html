@@ -60,6 +60,7 @@
       var etat = ETAT_INIT;
 
       // window.onload = init;
+      var mousePosition = { x: 0, y: 0 };
 
       var img = new Image(); // Crée un nouvel élément img
       var onLoadFct = function () {
@@ -75,6 +76,10 @@
       img.src =
         "https://i.picsum.photos/id/729/1000/500.jpg?hmac=tu3ry23zlOwR6E-uFqfHh9P3m6G2fpUO1fRk6LRq6x0";
       //"https://i.picsum.photos/id/348/1000/500.jpg?hmac=2PCaEp8HCbHNFZgFJq7PSE2Und9FvmaLMCfNNcramyE";
+
+      ///////////////////////////////////////////////////////////////////////
+      // Fonctions evts boutons: save, zoom et rotation
+      ///////////////////////////////////////////////////////////////////////
 
       function onSave() {
         var dataURL = canvas
@@ -136,6 +141,10 @@
         ctx.drawImage(img, 0, 0);
       }
 
+      ///////////////////////////////////////////////////////////////////////
+      // Init
+      ///////////////////////////////////////////////////////////////////////
+
       function init(image) {
         //canvas = document.getElementById("canvas");
         // CANVAS_X = canvas.getBoundingClientRect().x;
@@ -147,6 +156,10 @@
         initstartXAndstartY();
         ctx.strokeStyle = "black";
       }
+
+      ///////////////////////////////////////////////////////////////////////
+      // Evts souris
+      ///////////////////////////////////////////////////////////////////////
 
       function onMouseDown(event) {
         startX = event.offsetX;
@@ -168,6 +181,10 @@
       function onMouseMove(event) {
         var x = event.offsetX;
         var y = event.offsetY;
+
+        mousePosition.x = x;
+        mousePosition.y = y;
+
         if (
           etat !== ETAT_IMAGE_CHANGED &&
           isTherestartXAndstartY() &&
@@ -241,6 +258,10 @@
         }
         mouseIsDown = false;
       }
+
+      ///////////////////////////////////////////////////////////////////////
+      // Fonctions utilisées par les evts souris
+      ///////////////////////////////////////////////////////////////////////
 
       function isPointIsInRectangle(x, y, rect) {
         if (!rect) return false;
@@ -365,10 +386,22 @@
         ctxCopy.putImageData(imageDataCopy, 0, 0);
       }
 
+      ///////////////////////////////////////////////////////////////////////
+      // Fonctions evt clavier
+      ///////////////////////////////////////////////////////////////////////
+      function onKeyUp(evt) {
+        ctx.font = "48px serif";
+        ctx.fillText(evt.key, mousePosition.x, mousePosition.y);
+      }
+
+      ///////////////////////////////////////////////////////////////////////
+      // Init evts handler
+      ///////////////////////////////////////////////////////////////////////
       var canvas = document.getElementById("canvas");
       canvas.addEventListener("mousedown", onMouseDown);
       canvas.addEventListener("mousemove", onMouseMove);
       canvas.addEventListener("mouseup", onMouseUp);
+      document.addEventListener("keyup", onKeyUp);
     </script>
   </body>
 </html>
