@@ -71,8 +71,10 @@
       };
       img.addEventListener("load", onLoadFct, false);
       img.crossOrigin = "anonymous";
+      // https://picsum.photos/1000/500
       img.src =
-        "https://i.picsum.photos/id/348/1000/500.jpg?hmac=2PCaEp8HCbHNFZgFJq7PSE2Und9FvmaLMCfNNcramyE";
+        "https://i.picsum.photos/id/729/1000/500.jpg?hmac=tu3ry23zlOwR6E-uFqfHh9P3m6G2fpUO1fRk6LRq6x0";
+      //"https://i.picsum.photos/id/348/1000/500.jpg?hmac=2PCaEp8HCbHNFZgFJq7PSE2Und9FvmaLMCfNNcramyE";
 
       function onSave() {
         var dataURL = canvas
@@ -103,6 +105,13 @@
       }
       function rotateCanvas(rotateAngle) {
         ctx.clearRect(0, 0, WIDTH, HEIGHT);
+        if (Math.abs(rotateAngle) === 90 || Math.abs(rotateAngle) === 270) {
+          canvas.height = WIDTH;
+          canvas.width = HEIGHT;
+        } else {
+          canvas.width = WIDTH;
+          canvas.height = HEIGHT;
+        }
         ctx.save();
         ctx.rotate((rotateAngle * Math.PI) / 180);
 
